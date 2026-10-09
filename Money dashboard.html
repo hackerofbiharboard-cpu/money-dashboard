@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Money dashboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#f1eee8;--card:#fbfaf7;--ink:#111;--mute:#6b665d;--line:#ddd8cd;--yel:#f7c922;--grn:#12803a;--bar:#f7c922;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17160f;--card:#201f17;--ink:#f3f0e8;--mute:#a09a8a;--line:#34322676;--grn:#4cc77b}}
+:root[data-theme="dark"]{--bg:#17160f;--card:#201f17;--ink:#f3f0e8;--mute:#a09a8a;--line:#343226;--grn:#4cc77b}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:32px 20px 56px}
+h1{font:400 clamp(48px,9vw,96px)/.95 "Abril Fatface",Georgia,serif;margin:0 0 28px;letter-spacing:-.02em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+.top{display:grid;grid-template-columns:1fr 1.6fr;gap:16px}
+@media(max-width:700px){.top{grid-template-columns:1fr}}
+.lbl{font-size:14px;color:var(--mute);margin:0}
+.big{font-size:clamp(34px,6vw,48px);font-weight:600;letter-spacing:-.02em;margin:6px 0}
+.chg{color:var(--grn);font-weight:500;font-size:14px}
+.chg.neg{color:#c0392b}
+.chart{display:flex;align-items:flex-end;gap:10px;height:190px;margin-top:14px}
+.col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:6px;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
+.col .b{width:100%;background:var(--bar);border-radius:6px 6px 0 0;min-height:3px;transition:height .5s}
+.col.sel .b{outline:2px solid var(--ink)}
+.col .v{font-size:11px;color:var(--mute)}
+.col .m{font-size:13px;font-weight:500}
+.col:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:6px}
+.streams{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:16px}
+@media(max-width:700px){.streams{grid-template-columns:repeat(2,1fr)}}
+.s .n{font-weight:500;margin:8px 0 2px}
+.s .a{font-size:22px;font-weight:600}
+.s .p{height:6px;background:var(--line);border-radius:3px;margin-top:10px;overflow:hidden}
+.s .p i{display:block;height:100%;background:var(--yel)}
+.s .sh{font-size:12px;color:var(--mute);margin-top:4px}
+form{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:0}
+label{display:flex;flex-direction:column;font-size:13px;color:var(--mute);gap:4px;flex:1;min-width:130px}
+select,input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px}
+button.add{font:inherit;font-weight:600;background:var(--yel);color:#111;border:0;border-radius:8px;padding:11px 20px;cursor:pointer}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:28px 0 12px}
+h2{font-size:20px;margin:0;font-weight:600}
+.link{background:none;border:0;color:var(--mute);font:inherit;font-size:14px;text-decoration:underline;cursor:pointer;padding:4px}
+.note{display:inline-block;background:var(--yel);color:#111;padding:6px 12px;font-weight:500;transform:rotate(-2deg);box-shadow:2px 3px 0 rgba(0,0,0,.15);margin:0 0 20px}
+</style>
+</head>
+<body>
+<main>
+  <span class="note">More clarity, more freedom</span>
+  <h1>Money<br>dashboard</h1>
+
+  <div class="top">
+    <section class="card" aria-live="polite">
+      <p class="lbl" id="tl">Total revenue</p>
+      <p class="big" id="total"></p>
+      <p class="chg" id="chg"></p>
+    </section>
+    <section class="card">
+      <p class="lbl">Monthly revenue (tap a month to filter)</p>
+      <div class="chart" id="chart"></div>
+    </section>
+  </div>
+
+  <div class="streams" id="streams"></div>
+
+  <div class="row"><h2>Add income</h2><button class="link" id="reset">Reset everything to 0</button></div>
+  <section class="card">
+    <form id="f">
+      <label>Stream<select id="st"></select></label>
+      <label>Month<select id="mo"></select></label>
+      <label>Amount (₹)<input id="am" type="number" min="1" step="1" required placeholder="25000"></label>
+      <button class="add" type="submit">Add income</button>
+    </form>
+  </section>
+</main>
+<script>
+const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const S=[["Brand deals","📣"],["Product sales","📦"],["Client work","👤"],["Other","⋯"]];
+const SEED=[[10000,12000,5000,3000],[15000,18000,8000,4000],[20000,28000,10000,8000],[20000,30000,16000,12000],[25000,40000,28000,26500],[30000,47500,31000,25500],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+const KEY="money-dashboard-v1";
+let data,sel=null;
+try{const r=localStorage.getItem(KEY);data=r?JSON.parse(r):null}catch(e){data=null}
+if(!Array.isArray(data)||data.length!==12)data=JSON.parse(JSON.stringify(SEED));
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}};
+const inr=n=>"₹"+Math.round(n).toLocaleString("en-IN");
+const sum=a=>a.reduce((x,y)=>x+y,0);
+const $=id=>document.getElementById(id);
+
+S.forEach((s,i)=>$("st").add(new Option(s[0],i)));
+M.forEach((m,i)=>$("mo").add(new Option(m,i)));
+const last=data.reduce((l,r,i)=>sum(r)>0?i:l,0);
+$("mo").value=last;
+
+function render(){
+  const rows=sel===null?data:[data[sel]];
+  const per=S.map((_,j)=>sum(rows.map(r=>r[j])));
+  const tot=sum(per);
+  $("tl").textContent=sel===null?"Total revenue":"Revenue in "+M[sel];
+  $("total").textContent=inr(tot);
+  const mt=data.map(sum), li=mt.reduce((l,v,i)=>v>0?i:l,0);
+  const c=$("chg");
+  if(li>0&&mt[li-1]>0){const p=(mt[li]-mt[li-1])/mt[li-1]*100;
+    c.className="chg"+(p<0?" neg":"");
+    c.textContent=(p>=0?"↑ ":"↓ ")+Math.abs(p).toFixed(0)+"% in "+M[li]+" vs "+M[li-1];
+  }else c.textContent="";
+  const max=Math.max(...mt,1), shown=Math.max(li+1,6);
+  $("chart").innerHTML=mt.slice(0,shown).map((v,i)=>
+    `<button class="col${sel===i?" sel":""}" data-i="${i}" aria-label="${M[i]} ${inr(v)}"><span class="v">${v?Math.round(v/1000)+"k":""}</span><span class="b" style="height:${v/max*135}px"></span><span class="m">${M[i]}</span></button>`).join("");
+  $("streams").innerHTML=S.map((s,j)=>
+    `<div class="card s"><span aria-hidden="true">${s[1]}</span><div class="n">${s[0]}</div><div class="a">${inr(per[j])}</div><div class="p"><i style="width:${tot?per[j]/tot*100:0}%"></i></div><div class="sh">${tot?(per[j]/tot*100).toFixed(0):0}% of total</div></div>`).join("");
+}
+$("chart").addEventListener("click",e=>{const b=e.target.closest(".col");if(!b)return;const i=+b.dataset.i;sel=sel===i?null:i;render()});
+$("f").addEventListener("submit",e=>{e.preventDefault();
+  const a=parseFloat($("am").value);if(!(a>0))return;
+  data[+$("mo").value][+$("st").value]+=a;save();$("am").value="";render()});
+$("reset").addEventListener("click",()=>{data=Array.from({length:12},()=>[0,0,0,0]);sel=null;save();render()});
+render();
+</script>
+</body>
+</html>
